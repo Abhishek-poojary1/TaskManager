@@ -1,0 +1,1 @@
+enum TaskSort { dueDate, priority }
