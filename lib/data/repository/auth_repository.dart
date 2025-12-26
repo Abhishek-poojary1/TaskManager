@@ -1,33 +1,32 @@
 import 'package:hive/hive.dart';
+
 import '../../domain/models/user.dart';
 import '../local/hive_boxes.dart';
+import 'user_repository.dart';
 
 class AuthRepository {
+  final UserRepository _userRepository = UserRepository();
+
+  /// Restore logged-in user from session
   Future<User?> getCurrentUser() async {
     final box = await Hive.openBox(HiveBoxes.auth);
-    final email = box.get('email');
-    final role = box.get('role');
+    final userId = box.get('userId');
 
-    if (email == null || role == null) return null;
+    if (userId == null) return null;
 
-    return User(
-      id: 'local-user',
-      email: email,
-      role: role == 'admin' ? UserRole.admin : UserRole.member,
-    );
+    return _userRepository.getUserById(userId);
   }
 
-  Future<User> login(String email) async {
+  /// Login (email + password already validated elsewhere)
+  Future<User> login(User user) async {
     final box = await Hive.openBox(HiveBoxes.auth);
 
-    final role = email.contains('admin') ? UserRole.admin : UserRole.member;
+    await box.put('userId', user.id);
 
-    await box.put('email', email);
-    await box.put('role', role.name);
-
-    return User(id: 'local-user', email: email, role: role);
+    return user;
   }
 
+  /// Logout
   Future<void> logout() async {
     final box = await Hive.openBox(HiveBoxes.auth);
     await box.clear();

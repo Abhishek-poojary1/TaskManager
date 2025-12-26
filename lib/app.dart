@@ -25,7 +25,6 @@ class App extends ConsumerWidget {
           backgroundColor: Colors.transparent,
         ),
 
-        // ✅ FIX HERE
         cardTheme: CardThemeData(
           elevation: 2,
           margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
@@ -51,8 +50,12 @@ class App extends ConsumerWidget {
       home: authState.when(
         loading: () =>
             const Scaffold(body: Center(child: CircularProgressIndicator())),
-        error: (_, __) =>
-            const Scaffold(body: Center(child: Text('Something went wrong'))),
+        // ✅ FIXED: Return LoginScreen on error instead of error screen
+        error: (error, stackTrace) {
+          // Log the error for debugging but show login screen
+          // debugPrint('Auth Error: $error');
+          return const LoginScreen();
+        },
         data: (user) {
           if (user == null) return const LoginScreen();
           return const TaskListScreen();

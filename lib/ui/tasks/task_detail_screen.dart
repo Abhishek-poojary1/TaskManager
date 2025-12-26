@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:offline_task_app/data/local/user_role_hive.dart';
 import 'package:offline_task_app/domain/enums/task_priority.dart';
+import 'package:offline_task_app/viewmodel/checkin_viewmodel.dart';
+import 'package:offline_task_app/viewmodel/user_providers.dart';
 
 import '../../domain/models/task.dart';
 import '../../domain/models/user.dart';
@@ -194,6 +197,81 @@ class TaskDetailScreen extends ConsumerWidget {
                       ),
 
                       const SizedBox(height: 20),
+                      // 👤 ASSIGNED USER (ADMIN ONLY)
+                      if (user.role == UserRole.admin)
+                        Card(
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.person,
+                                      size: 20,
+                                      color: Colors.deepPurple.shade700,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text(
+                                      'Assigned To',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+
+                                Consumer(
+                                  builder: (context, ref, _) {
+                                    final assignedUserAsync = ref.watch(
+                                      assignedUserProvider(task.assignedUserId),
+                                    );
+
+                                    return assignedUserAsync.when(
+                                      loading: () =>
+                                          const Text('Loading user...'),
+                                      error: (_, __) => const Text(
+                                        'Unable to load user',
+                                        style: TextStyle(color: Colors.red),
+                                      ),
+                                      data: (assignedUser) {
+                                        if (assignedUser == null) {
+                                          return const Text(
+                                            'User not found',
+                                            style: TextStyle(
+                                              color: Colors.grey,
+                                            ),
+                                          );
+                                        }
+
+                                        return Row(
+                                          children: [
+                                            const Icon(Icons.email, size: 16),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              assignedUser.email,
+                                              style: const TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
 
                       // Details Card
                       Card(
@@ -267,6 +345,57 @@ class TaskDetailScreen extends ConsumerWidget {
                             ],
                           ),
                         ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // 📋 CHECK-INS (ADMIN ONLY)
+                      const SizedBox(height: 24),
+
+                      const Text(
+                        'Check-ins',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final state = ref.watch(
+                            checkInsForTaskProvider(task.id),
+                          );
+
+                          return state.when(
+                            loading: () => const CircularProgressIndicator(),
+                            error: (e, _) => Text('Error loading check-ins'),
+                            data: (checkIns) {
+                              if (checkIns.isEmpty) {
+                                return const Text('No check-ins yet');
+                              }
+
+                              return Column(
+                                children: checkIns.map((c) {
+                                  return Card(
+                                    child: ListTile(
+                                      leading: const Icon(Icons.note),
+                                      title: Text(c.category),
+                                      subtitle: Text(c.notes),
+                                      trailing: Text(
+                                        c.syncStatus.name.toUpperCase(),
+                                        style: TextStyle(
+                                          color: c.syncStatus.name == 'synced'
+                                              ? Colors.green
+                                              : Colors.orange,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              );
+                            },
+                          );
+                        },
                       ),
 
                       const SizedBox(height: 20),
@@ -469,6 +598,7 @@ class _StatusButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isSelected = task.status == status;
+    final user = ref.read(authViewModelProvider).value!;
 
     return FilterChip(
       avatar: Icon(_icon, size: 18, color: isSelected ? Colors.white : _color),
@@ -487,7 +617,9 @@ class _StatusButton extends StatelessWidget {
       side: BorderSide(color: _color, width: 1.5),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       onSelected: (_) {
-        ref.read(taskViewModelProvider.notifier).updateStatus(task, status);
+        ref
+            .read(taskViewModelProvider.notifier)
+            .updateStatus(task, status, user);
         Navigator.pop(context);
       },
     );

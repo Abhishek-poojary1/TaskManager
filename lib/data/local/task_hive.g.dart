@@ -8,7 +8,7 @@ part of 'task_hive.dart';
 
 class TaskHiveAdapter extends TypeAdapter<TaskHive> {
   @override
-  final int typeId = 1;
+  final int typeId = 3;
 
   @override
   TaskHive read(BinaryReader reader) {
@@ -24,15 +24,16 @@ class TaskHiveAdapter extends TypeAdapter<TaskHive> {
       priority: fields[4] as TaskPriority,
       dueDate: fields[5] as DateTime,
       location: fields[6] as String,
-      updatedAt: fields[7] as DateTime,
+      assignedUserId: fields[7] as String,
       isSynced: fields[8] as bool,
+      updatedAt: fields[9] as DateTime,
     );
   }
 
   @override
   void write(BinaryWriter writer, TaskHive obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -48,9 +49,11 @@ class TaskHiveAdapter extends TypeAdapter<TaskHive> {
       ..writeByte(6)
       ..write(obj.location)
       ..writeByte(7)
-      ..write(obj.updatedAt)
+      ..write(obj.assignedUserId)
       ..writeByte(8)
-      ..write(obj.isSynced);
+      ..write(obj.isSynced)
+      ..writeByte(9)
+      ..write(obj.updatedAt);
   }
 
   @override

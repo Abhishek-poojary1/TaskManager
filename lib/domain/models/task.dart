@@ -1,40 +1,53 @@
-import '../enums/task_status.dart';
-import '../enums/task_priority.dart';
+import 'package:offline_task_app/domain/enums/task_priority.dart';
+import 'package:offline_task_app/domain/enums/task_status.dart';
 
 class Task {
   final String id;
   final String title;
   final String description;
-  final TaskStatus status;
-  final TaskPriority priority;
   final DateTime dueDate;
+  final TaskPriority priority;
+  final TaskStatus status;
   final String location;
-  final DateTime updatedAt;
+  final String assignedUserId; // ✅ ADD
   final bool isSynced;
+  final DateTime updatedAt;
 
   Task({
     required this.id,
     required this.title,
     required this.description,
-    required this.status,
-    required this.priority,
     required this.dueDate,
+    required this.priority,
+    required this.status,
     required this.location,
-    required this.updatedAt,
+    required this.assignedUserId, // ✅ ADD
     required this.isSynced,
+    required this.updatedAt,
   });
-
-  Task copyWith({TaskStatus? status, bool? isSynced, DateTime? updatedAt}) {
+  Task copyWith({
+    String? id,
+    String? title,
+    String? description,
+    DateTime? dueDate,
+    TaskPriority? priority,
+    TaskStatus? status,
+    String? location,
+    String? assignedUserId,
+    bool? isSynced,
+    DateTime? updatedAt,
+  }) {
     return Task(
-      id: id,
-      title: title,
-      description: description,
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      dueDate: dueDate ?? this.dueDate,
+      priority: priority ?? this.priority,
       status: status ?? this.status,
-      priority: priority,
-      dueDate: dueDate,
-      location: location,
-      updatedAt: updatedAt ?? this.updatedAt,
+      location: location ?? this.location,
+      assignedUserId: assignedUserId ?? this.assignedUserId,
       isSynced: isSynced ?? this.isSynced,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }

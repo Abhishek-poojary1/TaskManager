@@ -5,7 +5,7 @@ import '../../domain/enums/task_priority.dart';
 
 part 'task_hive.g.dart';
 
-@HiveType(typeId: 1)
+@HiveType(typeId: 3)
 class TaskHive extends HiveObject {
   @HiveField(0)
   String id;
@@ -29,10 +29,13 @@ class TaskHive extends HiveObject {
   String location;
 
   @HiveField(7)
-  DateTime updatedAt;
+  String assignedUserId; // ✅ ADD
 
   @HiveField(8)
   bool isSynced;
+
+  @HiveField(9)
+  DateTime updatedAt;
 
   TaskHive({
     required this.id,
@@ -42,19 +45,23 @@ class TaskHive extends HiveObject {
     required this.priority,
     required this.dueDate,
     required this.location,
-    required this.updatedAt,
+    required this.assignedUserId, // ✅ ADD
     required this.isSynced,
+    required this.updatedAt,
   });
 
-  Task toDomain() => Task(
-    id: id,
-    title: title,
-    description: description,
-    status: status,
-    priority: priority,
-    dueDate: dueDate,
-    location: location,
-    updatedAt: updatedAt,
-    isSynced: isSynced,
-  );
+  Task toDomain() {
+    return Task(
+      id: id,
+      title: title,
+      description: description,
+      status: status,
+      priority: priority,
+      dueDate: dueDate,
+      location: location,
+      assignedUserId: assignedUserId, // ✅ ADD
+      isSynced: isSynced,
+      updatedAt: updatedAt,
+    );
+  }
 }

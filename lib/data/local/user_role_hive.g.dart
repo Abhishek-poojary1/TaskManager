@@ -1,40 +1,35 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'checkin_status_hive.dart';
+part of 'user_role_hive.dart';
 
 // **************************************************************************
 // TypeAdapterGenerator
 // **************************************************************************
 
-class CheckInSyncStatusHiveAdapter extends TypeAdapter<CheckInSyncStatusHive> {
+class UserRoleAdapter extends TypeAdapter<UserRole> {
   @override
-  final int typeId = 9;
+  final int typeId = 8;
 
   @override
-  CheckInSyncStatusHive read(BinaryReader reader) {
+  UserRole read(BinaryReader reader) {
     switch (reader.readByte()) {
       case 0:
-        return CheckInSyncStatusHive.pending;
+        return UserRole.admin;
       case 1:
-        return CheckInSyncStatusHive.synced;
-      case 2:
-        return CheckInSyncStatusHive.failed;
+        return UserRole.member;
       default:
-        return CheckInSyncStatusHive.pending;
+        return UserRole.admin;
     }
   }
 
   @override
-  void write(BinaryWriter writer, CheckInSyncStatusHive obj) {
+  void write(BinaryWriter writer, UserRole obj) {
     switch (obj) {
-      case CheckInSyncStatusHive.pending:
+      case UserRole.admin:
         writer.writeByte(0);
         break;
-      case CheckInSyncStatusHive.synced:
+      case UserRole.member:
         writer.writeByte(1);
-        break;
-      case CheckInSyncStatusHive.failed:
-        writer.writeByte(2);
         break;
     }
   }
@@ -45,7 +40,7 @@ class CheckInSyncStatusHiveAdapter extends TypeAdapter<CheckInSyncStatusHive> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is CheckInSyncStatusHiveAdapter &&
+      other is UserRoleAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

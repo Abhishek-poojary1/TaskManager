@@ -1,7 +1,5 @@
 import 'package:hive/hive.dart';
 
-import 'package:hive/hive.dart';
-
 import '../../domain/models/checkin.dart';
 import 'checkin_status_hive.dart';
 
@@ -43,4 +41,18 @@ class CheckInHive extends HiveObject {
     required this.createdAt,
     required this.syncStatus,
   });
+
+  /// Hive → Domain
+  CheckIn toDomain() {
+    return CheckIn(
+      id: id,
+      taskId: taskId,
+      notes: notes,
+      category: category,
+      latitude: latitude,
+      longitude: longitude,
+      createdAt: createdAt,
+      syncStatus: syncStatus.toDomain(),
+    );
+  }
 }

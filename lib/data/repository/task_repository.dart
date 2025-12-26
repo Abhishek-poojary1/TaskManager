@@ -1,7 +1,11 @@
 import 'package:hive/hive.dart';
+import 'package:offline_task_app/data/local/user_role_hive.dart';
+import 'package:offline_task_app/domain/models/user.dart';
 import 'package:uuid/uuid.dart';
+
 import '../local/hive_boxes.dart';
 import '../local/task_hive.dart';
+
 import '../../domain/models/task.dart';
 import '../../domain/enums/task_status.dart';
 import '../../domain/enums/task_priority.dart';
@@ -17,8 +21,9 @@ class TaskRepository {
   Future<void> createTask({
     required String title,
     required String description,
-    required TaskPriority priority,
     required DateTime dueDate,
+    required TaskPriority priority,
+    required String assignedUserId,
   }) async {
     final box = await Hive.openBox<TaskHive>(HiveBoxes.tasks);
 
@@ -31,49 +36,55 @@ class TaskRepository {
         priority: priority,
         dueDate: dueDate,
         location: 'Unassigned',
-        updatedAt: DateTime.now(),
+        assignedUserId: assignedUserId,
+
+        // 🔐 OFFLINE-FIRST
         isSynced: false,
+        updatedAt: DateTime.now(),
       ),
     );
   }
 
-  Future<void> seedTasksIfEmpty() async {
+  Future<void> updateTaskStatus(String taskId, TaskStatus status) async {
     final box = await Hive.openBox<TaskHive>(HiveBoxes.tasks);
-    if (box.isNotEmpty) return;
 
-    await box.addAll([
-      TaskHive(
-        id: _uuid.v4(),
-        title: 'Site inspection',
-        description: 'Inspect safety compliance',
-        status: TaskStatus.open,
-        priority: TaskPriority.high,
-        dueDate: DateTime.now().add(const Duration(days: 1)),
-        location: 'Warehouse A',
-        updatedAt: DateTime.now(),
-        isSynced: true,
-      ),
-      TaskHive(
-        id: _uuid.v4(),
-        title: 'Progress report',
-        description: 'Daily progress update',
-        status: TaskStatus.inProgress,
-        priority: TaskPriority.medium,
-        dueDate: DateTime.now().add(const Duration(days: 2)),
-        location: 'Site B',
-        updatedAt: DateTime.now(),
-        isSynced: true,
-      ),
-    ]);
+    final task = box.values.firstWhere((t) => t.id == taskId);
+    task
+      ..status = status
+      ..updatedAt = DateTime.now()
+      ..isSynced = false; // 🔴 mark dirty
+
+    await task.save();
   }
 
-  Future<void> updateTask(Task task) async {
+  Future<List<Task>> getTasksForUser(User user) async {
     final box = await Hive.openBox<TaskHive>(HiveBoxes.tasks);
-    final taskHive = box.values.firstWhere((e) => e.id == task.id);
-    taskHive
-      ..status = task.status
-      ..updatedAt = DateTime.now()
-      ..isSynced = false;
-    await taskHive.save();
+
+    // Admin sees all tasks
+    if (user.role == UserRole.admin) {
+      return box.values.map((e) => e.toDomain()).toList();
+    }
+
+    // Member sees only assigned tasks
+    return box.values
+        .where((t) => t.assignedUserId == user.id)
+        .map((e) => e.toDomain())
+        .toList();
+  }
+
+  /// 🔁 Used later by sync worker
+  Future<List<TaskHive>> getPendingTasks() async {
+    final box = await Hive.openBox<TaskHive>(HiveBoxes.tasks);
+    return box.values.where((t) => !t.isSynced).toList();
+  }
+
+  /// 🔁 Mark synced after successful upload
+  Future<void> markSynced(String taskId) async {
+    final box = await Hive.openBox<TaskHive>(HiveBoxes.tasks);
+    final task = box.values.firstWhere((t) => t.id == taskId);
+    task
+      ..isSynced = true
+      ..updatedAt = DateTime.now();
+    await task.save();
   }
 }

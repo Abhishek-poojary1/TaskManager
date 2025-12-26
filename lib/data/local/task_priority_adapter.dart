@@ -3,7 +3,7 @@ import '../../domain/enums/task_priority.dart';
 
 class TaskPriorityAdapter extends TypeAdapter<TaskPriority> {
   @override
-  final int typeId = 3;
+  final int typeId = 4;
 
   @override
   TaskPriority read(BinaryReader reader) {

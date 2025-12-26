@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:offline_task_app/data/local/user_role_hive.dart';
 import 'package:offline_task_app/domain/enums/task_priority.dart';
 import 'package:offline_task_app/domain/enums/task_status.dart';
 
 import '../../viewmodel/task_viewmodel.dart';
 import '../../viewmodel/auth_viewmodel.dart';
 
-import '../../domain/models/task.dart';
 import '../../domain/models/user.dart';
 import '../../domain/enums/task_filter.dart';
 import '../../domain/enums/task_sort.dart';
@@ -14,8 +14,15 @@ import '../../domain/enums/task_sort.dart';
 import '../admin/create_task_screen.dart';
 import 'task_detail_screen.dart';
 
-class TaskListScreen extends ConsumerWidget {
+class TaskListScreen extends ConsumerStatefulWidget {
   const TaskListScreen({super.key});
+
+  @override
+  ConsumerState<TaskListScreen> createState() => _TaskListScreenState();
+}
+
+class _TaskListScreenState extends ConsumerState<TaskListScreen> {
+  bool _loaded = false;
 
   Color _getStatusColor(TaskStatus status) {
     switch (status) {
@@ -40,7 +47,21 @@ class TaskListScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (_loaded) return;
+
+    final user = ref.read(authViewModelProvider).value;
+
+    if (user != null) {
+      ref.read(taskViewModelProvider.notifier).loadTasks(user);
+      _loaded = true;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final taskState = ref.watch(taskViewModelProvider);
     final authState = ref.watch(authViewModelProvider);
 
@@ -66,7 +87,6 @@ class TaskListScreen extends ConsumerWidget {
             final bool isAdmin = user.role == UserRole.admin;
 
             return [
-              // ➕ CREATE TASK (ADMIN ONLY)
               if (isAdmin)
                 IconButton(
                   icon: const Icon(Icons.add_circle_outline, size: 26),
@@ -81,7 +101,6 @@ class TaskListScreen extends ConsumerWidget {
                   },
                 ),
 
-              // 🔍 FILTER (STATUS)
               PopupMenuButton<TaskFilter>(
                 icon: const Icon(Icons.filter_list, size: 26),
                 tooltip: 'Filter Tasks',
@@ -148,7 +167,6 @@ class TaskListScreen extends ConsumerWidget {
                 ],
               ),
 
-              // 🔃 SORT
               PopupMenuButton<TaskSort>(
                 icon: const Icon(Icons.sort, size: 26),
                 tooltip: 'Sort Tasks',
@@ -193,7 +211,6 @@ class TaskListScreen extends ConsumerWidget {
                 ],
               ),
 
-              // 🔐 LOGOUT
               IconButton(
                 icon: const Icon(Icons.logout, size: 24),
                 tooltip: 'Logout',
@@ -247,7 +264,7 @@ class TaskListScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            data: (List<Task> tasks) {
+            data: (tasks) {
               if (tasks.isEmpty) {
                 return Center(
                   child: Column(
@@ -437,7 +454,9 @@ class TaskListScreen extends ConsumerWidget {
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
-                                          task.isSynced ? 'SYNCED' : 'In Local',
+                                          task.isSynced
+                                              ? 'SYNCED'
+                                              : 'NOT SYNCED',
                                           style: TextStyle(
                                             fontSize: 11,
                                             fontWeight: FontWeight.bold,

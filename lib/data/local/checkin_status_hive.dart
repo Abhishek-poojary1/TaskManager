@@ -3,7 +3,7 @@ import '../../domain/enums/checkin_status.dart';
 
 part 'checkin_status_hive.g.dart';
 
-@HiveType(typeId: 5)
+@HiveType(typeId: 9)
 enum CheckInSyncStatusHive {
   @HiveField(0)
   pending,
@@ -15,14 +15,15 @@ enum CheckInSyncStatusHive {
   failed,
 }
 
-extension CheckInSyncStatusMapper on CheckInSyncStatusHive {
+extension CheckInSyncStatusHiveX on CheckInSyncStatusHive {
   CheckInSyncStatus toDomain() {
-    return CheckInSyncStatus.values[index];
-  }
-}
-
-extension CheckInSyncStatusHiveMapper on CheckInSyncStatus {
-  CheckInSyncStatusHive toHive() {
-    return CheckInSyncStatusHive.values[index];
+    switch (this) {
+      case CheckInSyncStatusHive.pending:
+        return CheckInSyncStatus.pending;
+      case CheckInSyncStatusHive.synced:
+        return CheckInSyncStatus.synced;
+      case CheckInSyncStatusHive.failed:
+        return CheckInSyncStatus.failed;
+    }
   }
 }

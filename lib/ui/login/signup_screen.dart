@@ -1,71 +1,82 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:offline_task_app/ui/login/signup_screen.dart';
+import 'package:offline_task_app/data/local/user_role_hive.dart';
 
 import '../../viewmodel/auth_viewmodel.dart';
 
-class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+class SignupScreen extends ConsumerStatefulWidget {
+  const SignupScreen({super.key});
 
   @override
-  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
+class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
 
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
 
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
   bool _isLoading = false;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  void _login() {
+  void _signup() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
-    ref
-        .read(authViewModelProvider.notifier)
-        .login(
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
-        )
-        .then((_) {
-          // Success - do nothing, navigation handled elsewhere
-          if (mounted) {
-            setState(() => _isLoading = false);
-          }
-        })
-        .catchError((error) {
-          if (mounted) {
-            setState(() => _isLoading = false);
-            _showErrorSnackBar(context, _getErrorMessage(error.toString()));
-          }
-        });
+    try {
+      await ref
+          .read(authViewModelProvider.notifier)
+          .signup(
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+            role: UserRole.member,
+          );
+
+      if (mounted) {
+        _showSuccessSnackBar(context, 'Account created successfully!');
+        // Navigation handled by listener
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorSnackBar(context, _getErrorMessage(e.toString()));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   String _getErrorMessage(String error) {
     if (error.toLowerCase().contains('network') ||
         error.toLowerCase().contains('connection')) {
       return 'Network error. Please check your internet connection.';
-    } else if (error.toLowerCase().contains('credentials') ||
-        error.toLowerCase().contains('password') ||
-        error.toLowerCase().contains('email')) {
-      return 'Invalid email or password. Please try again.';
-    } else if (error.toLowerCase().contains('not found')) {
-      return 'Account not found. Please sign up first.';
+    } else if (error.toLowerCase().contains('already exists') ||
+        error.toLowerCase().contains('duplicate') ||
+        error.toLowerCase().contains('already registered')) {
+      return 'This email is already registered. Please login instead.';
+    } else if (error.toLowerCase().contains('invalid email')) {
+      return 'Please enter a valid email address.';
+    } else if (error.toLowerCase().contains('weak password')) {
+      return 'Password is too weak. Please use a stronger password.';
     } else if (error.toLowerCase().contains('timeout')) {
       return 'Request timeout. Please try again.';
     }
-    return 'Login failed. Please try again later.';
+    return 'Signup failed. Please try again later.';
   }
 
   void _showErrorSnackBar(BuildContext context, String message) {
@@ -94,21 +105,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
+  void _showSuccessSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_outline, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(message, style: const TextStyle(fontSize: 15)),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.green.shade600,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Listen to auth state changes for error handling
+    ref.watch(authViewModelProvider);
+
     ref.listen(authViewModelProvider, (previous, next) {
       next.whenOrNull(
-        error: (error, stackTrace) {
-          if (mounted) {
-            setState(() => _isLoading = false);
-            _showErrorSnackBar(context, _getErrorMessage(error.toString()));
-          }
-        },
         data: (user) {
-          if (mounted && user != null) {
-            setState(() => _isLoading = false);
-            // Success - navigation handled elsewhere
+          if (user != null && mounted) {
+            Navigator.pop(context);
           }
         },
       );
@@ -120,10 +146,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         title: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.login, size: 24),
+            Icon(Icons.person_add_alt_1, size: 24),
             SizedBox(width: 12),
             Text(
-              'Login',
+              'Create Account',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ],
@@ -178,7 +204,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ],
                           ),
                           child: const Icon(
-                            Icons.task_alt,
+                            Icons.person_add_alt_1,
                             size: 48,
                             color: Colors.white,
                           ),
@@ -187,7 +213,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                         // Welcome Text
                         const Text(
-                          'Welcome Back!',
+                          'Join Us Today!',
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
@@ -196,7 +222,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Sign in to continue',
+                          'Create your account to get started',
                           style: TextStyle(
                             fontSize: 15,
                             color: Colors.grey.shade600,
@@ -265,7 +291,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           enabled: !_isLoading,
                           decoration: InputDecoration(
                             labelText: 'Password',
-                            hintText: 'Enter your password',
+                            hintText: 'Create a strong password',
                             prefixIcon: Icon(
                               Icons.lock_outline,
                               color: Colors.deepPurple.shade700,
@@ -312,10 +338,81 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter your password';
+                              return 'Please enter a password';
                             }
                             if (value.length < 6) {
                               return 'Password must be at least 6 characters';
+                            }
+                            if (!RegExp(
+                              r'^(?=.*[a-zA-Z])(?=.*\d)',
+                            ).hasMatch(value)) {
+                              return 'Password must contain letters and numbers';
+                            }
+                            return null;
+                          },
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // CONFIRM PASSWORD FIELD
+                        TextFormField(
+                          controller: _confirmPasswordController,
+                          obscureText: _obscureConfirmPassword,
+                          enabled: !_isLoading,
+                          decoration: InputDecoration(
+                            labelText: 'Confirm Password',
+                            hintText: 'Re-enter your password',
+                            prefixIcon: Icon(
+                              Icons.lock_outline,
+                              color: Colors.deepPurple.shade700,
+                            ),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscureConfirmPassword
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                                color: Colors.grey.shade600,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscureConfirmPassword =
+                                      !_obscureConfirmPassword;
+                                });
+                              },
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                                width: 1.5,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.deepPurple.shade700,
+                                width: 2,
+                              ),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: Colors.red,
+                                width: 1.5,
+                              ),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please confirm your password';
+                            }
+                            if (value != _passwordController.text) {
+                              return 'Passwords do not match';
                             }
                             return null;
                           },
@@ -323,47 +420,46 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                         const SizedBox(height: 12),
 
-                        // Forgot Password
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: _isLoading
-                                ? null
-                                : () {
-                                    // TODO: Implement forgot password
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: const Text(
-                                          'Forgot password feature coming soon!',
-                                        ),
-                                        behavior: SnackBarBehavior.floating,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            10,
-                                          ),
-                                        ),
-                                        margin: const EdgeInsets.all(16),
-                                      ),
-                                    );
-                                  },
-                            child: Text(
-                              'Forgot Password?',
-                              style: TextStyle(
-                                color: Colors.deepPurple.shade700,
-                                fontWeight: FontWeight.w600,
-                              ),
+                        // Password Requirements Info
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.blue.shade200,
+                              width: 1,
                             ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                size: 18,
+                                color: Colors.blue.shade700,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Password must be at least 6 characters with letters and numbers',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.blue.shade900,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
 
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 24),
 
-                        // LOGIN BUTTON
+                        // SIGNUP BUTTON
                         SizedBox(
                           width: double.infinity,
                           height: 54,
                           child: ElevatedButton(
-                            onPressed: _isLoading ? null : _login,
+                            onPressed: _isLoading ? null : _signup,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.deepPurple.shade700,
                               foregroundColor: Colors.white,
@@ -386,7 +482,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     ),
                                   )
                                 : const Text(
-                                    'Login',
+                                    'Create Account',
                                     style: TextStyle(
                                       fontSize: 17,
                                       fontWeight: FontWeight.bold,
@@ -424,12 +520,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                         const SizedBox(height: 20),
 
-                        // SIGNUP NAVIGATION
+                        // LOGIN NAVIGATION
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              "Don't have an account? ",
+                              'Already have an account? ',
                               style: TextStyle(
                                 color: Colors.grey.shade700,
                                 fontSize: 15,
@@ -439,12 +535,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               onPressed: _isLoading
                                   ? null
                                   : () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => const SignupScreen(),
-                                        ),
-                                      );
+                                      Navigator.pop(context);
                                     },
                               style: TextButton.styleFrom(
                                 padding: EdgeInsets.zero,
@@ -452,7 +543,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
                               child: Text(
-                                'Sign Up',
+                                'Login',
                                 style: TextStyle(
                                   color: Colors.deepPurple.shade700,
                                   fontWeight: FontWeight.bold,
