@@ -197,6 +197,7 @@ class TaskDetailScreen extends ConsumerWidget {
                       ),
 
                       const SizedBox(height: 20),
+
                       // 👤 ASSIGNED USER (ADMIN ONLY)
                       if (user.role == UserRole.admin)
                         Card(
@@ -227,7 +228,6 @@ class TaskDetailScreen extends ConsumerWidget {
                                   ],
                                 ),
                                 const SizedBox(height: 12),
-
                                 Consumer(
                                   builder: (context, ref, _) {
                                     final assignedUserAsync = ref.watch(
@@ -273,6 +273,8 @@ class TaskDetailScreen extends ConsumerWidget {
                           ),
                         ),
 
+                      const SizedBox(height: 20),
+
                       // Details Card
                       Card(
                         elevation: 2,
@@ -312,13 +314,6 @@ class TaskDetailScreen extends ConsumerWidget {
                               const Divider(height: 24),
 
                               _InfoRow(
-                                icon: Icons.location_on,
-                                label: 'Location',
-                                value: task.location,
-                              ),
-                              const Divider(height: 24),
-
-                              _InfoRow(
                                 icon: Icons.calendar_today,
                                 label: 'Due Date',
                                 value: _formatDate(task.dueDate),
@@ -346,61 +341,10 @@ class TaskDetailScreen extends ConsumerWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
-
-                      // 📋 CHECK-INS (ADMIN ONLY)
-                      const SizedBox(height: 24),
-
-                      const Text(
-                        'Check-ins',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-
-                      Consumer(
-                        builder: (context, ref, _) {
-                          final state = ref.watch(
-                            checkInsForTaskProvider(task.id),
-                          );
-
-                          return state.when(
-                            loading: () => const CircularProgressIndicator(),
-                            error: (e, _) => Text('Error loading check-ins'),
-                            data: (checkIns) {
-                              if (checkIns.isEmpty) {
-                                return const Text('No check-ins yet');
-                              }
-
-                              return Column(
-                                children: checkIns.map((c) {
-                                  return Card(
-                                    child: ListTile(
-                                      leading: const Icon(Icons.note),
-                                      title: Text(c.category),
-                                      subtitle: Text(c.notes),
-                                      trailing: Text(
-                                        c.syncStatus.name.toUpperCase(),
-                                        style: TextStyle(
-                                          color: c.syncStatus.name == 'synced'
-                                              ? Colors.green
-                                              : Colors.orange,
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
-                              );
-                            },
-                          );
-                        },
-                      ),
 
                       const SizedBox(height: 20),
 
-                      // Status Update Section
+                      // Status Update Section (for both Admin and Member)
                       Card(
                         elevation: 2,
                         shape: RoundedRectangleBorder(
@@ -445,6 +389,364 @@ class TaskDetailScreen extends ConsumerWidget {
                             ],
                           ),
                         ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // 📋 CHECK-INS SECTION
+                      const Text(
+                        'Check-ins',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final state = ref.watch(
+                            checkInsForTaskProvider(task.id),
+                          );
+
+                          return state.when(
+                            loading: () => const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(20),
+                                child: CircularProgressIndicator(),
+                              ),
+                            ),
+                            error: (e, _) => Card(
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.error_outline,
+                                      color: Colors.red.shade400,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    const Text(
+                                      'Error loading check-ins',
+                                      style: TextStyle(color: Colors.red),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            data: (checkIns) {
+                              if (checkIns.isEmpty) {
+                                return Card(
+                                  elevation: 2,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(20),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.info_outline,
+                                          color: Colors.grey.shade400,
+                                          size: 24,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Text(
+                                          'No check-ins yet',
+                                          style: TextStyle(
+                                            color: Colors.grey.shade600,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }
+
+                              return Column(
+                                children: checkIns.map((c) {
+                                  return Card(
+                                    elevation: 2,
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          // Header Row
+                                          Row(
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.all(
+                                                  8,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: Colors
+                                                      .deepPurple
+                                                      .shade700
+                                                      .withOpacity(0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                                child: Icon(
+                                                  Icons.location_on,
+                                                  color: Colors
+                                                      .deepPurple
+                                                      .shade700,
+                                                  size: 20,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      c.category,
+                                                      style: const TextStyle(
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 2),
+                                                  ],
+                                                ),
+                                              ),
+                                              // Sync Status Badge
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 10,
+                                                      vertical: 6,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color:
+                                                      c.syncStatus.name ==
+                                                          'synced'
+                                                      ? Colors.green.shade50
+                                                      : Colors.orange.shade50,
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                  border: Border.all(
+                                                    color:
+                                                        c.syncStatus.name ==
+                                                            'synced'
+                                                        ? Colors.green.shade300
+                                                        : Colors
+                                                              .orange
+                                                              .shade300,
+                                                  ),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      c.syncStatus.name ==
+                                                              'synced'
+                                                          ? Icons.cloud_done
+                                                          : Icons.cloud_off,
+                                                      size: 14,
+                                                      color:
+                                                          c.syncStatus.name ==
+                                                              'synced'
+                                                          ? Colors
+                                                                .green
+                                                                .shade700
+                                                          : Colors
+                                                                .orange
+                                                                .shade700,
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    Text(
+                                                      c.syncStatus.name
+                                                          .toUpperCase(),
+                                                      style: TextStyle(
+                                                        fontSize: 11,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color:
+                                                            c.syncStatus.name ==
+                                                                'synced'
+                                                            ? Colors
+                                                                  .green
+                                                                  .shade700
+                                                            : Colors
+                                                                  .orange
+                                                                  .shade700,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+
+                                          const SizedBox(height: 16),
+
+                                          // Location Coordinates
+                                          Container(
+                                            padding: const EdgeInsets.all(12),
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey.shade50,
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              border: Border.all(
+                                                color: Colors.grey.shade200,
+                                              ),
+                                            ),
+                                            child: Column(
+                                              children: [
+                                                // Latitude
+                                                Row(
+                                                  children: [
+                                                    Icon(
+                                                      Icons.north,
+                                                      size: 18,
+                                                      color:
+                                                          Colors.grey.shade700,
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Text(
+                                                      'Latitude:',
+                                                      style: TextStyle(
+                                                        fontSize: 13,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: Colors
+                                                            .grey
+                                                            .shade700,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Expanded(
+                                                      child: Text(
+                                                        c.latitude
+                                                            .toStringAsFixed(6),
+                                                        style: TextStyle(
+                                                          fontSize: 13,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                          color: Colors
+                                                              .grey
+                                                              .shade900,
+                                                          fontFamily:
+                                                              'monospace',
+                                                        ),
+                                                        textAlign:
+                                                            TextAlign.right,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 8),
+                                                Divider(
+                                                  height: 1,
+                                                  color: Colors.grey.shade300,
+                                                ),
+                                                const SizedBox(height: 8),
+                                                // Longitude
+                                                Row(
+                                                  children: [
+                                                    Icon(
+                                                      Icons.east,
+                                                      size: 18,
+                                                      color:
+                                                          Colors.grey.shade700,
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Text(
+                                                      'Longitude:',
+                                                      style: TextStyle(
+                                                        fontSize: 13,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: Colors
+                                                            .grey
+                                                            .shade700,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Expanded(
+                                                      child: Text(
+                                                        c.longitude
+                                                            .toStringAsFixed(6),
+                                                        style: TextStyle(
+                                                          fontSize: 13,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                          color: Colors
+                                                              .grey
+                                                              .shade900,
+                                                          fontFamily:
+                                                              'monospace',
+                                                        ),
+                                                        textAlign:
+                                                            TextAlign.right,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+
+                                          // Notes (if not empty)
+                                          if (c.notes.isNotEmpty) ...[
+                                            const SizedBox(height: 12),
+                                            Container(
+                                              padding: const EdgeInsets.all(12),
+                                              decoration: BoxDecoration(
+                                                color: Colors.blue.shade50,
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                              child: Row(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Icon(
+                                                    Icons.note_outlined,
+                                                    size: 16,
+                                                    color: Colors.blue.shade700,
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Expanded(
+                                                    child: Text(
+                                                      c.notes,
+                                                      style: TextStyle(
+                                                        fontSize: 13,
+                                                        color: Colors
+                                                            .grey
+                                                            .shade800,
+                                                        height: 1.4,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              );
+                            },
+                          );
+                        },
                       ),
 
                       const SizedBox(height: 24),

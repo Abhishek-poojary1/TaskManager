@@ -35,7 +35,7 @@ class TaskRepository {
         status: TaskStatus.open,
         priority: priority,
         dueDate: dueDate,
-        location: 'Unassigned',
+        location: '',
         assignedUserId: assignedUserId,
 
         // 🔐 OFFLINE-FIRST
